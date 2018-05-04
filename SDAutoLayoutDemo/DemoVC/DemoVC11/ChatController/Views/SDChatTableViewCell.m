@@ -29,6 +29,7 @@
 
 #import "UIView+SDAutoLayout.h"
 
+#import "LEETheme.h"
 
 #define kLabelMargin 20.f
 #define kLabelTopMargin 8.f
@@ -60,7 +61,13 @@
 - (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
 {
     if (self = [super initWithStyle:style reuseIdentifier:reuseIdentifier]) {
+        
         [self setupView];
+    
+        //设置主题
+        
+        [self configTheme];
+        
     }
     return self;
 }
@@ -96,11 +103,45 @@
     
     // 设置containerBackgroundImageView填充父view
     _containerBackgroundImageView.sd_layout.spaceToSuperView(UIEdgeInsetsMake(0, 0, 0, 0));
- 
 }
 
-- (void)setModel:(SDChatModel *)model
-{
+- (void)configTheme{
+    
+    self.lee_theme.LeeConfigBackgroundColor(@"demovc11_backgroundcolor");
+    
+//    self.label.lee_theme.LeeConfigTextColor(@"demovc11_textcolor");
+    
+    //其实UILabel的话只要按照上面的设置textcolor就可以的 , 这个label是第三方的 设置后不会马上变 , 需要重新赋值一下才会改变 - ,- 针对你这个情况 所以这样处理一下先
+    self.label.lee_theme
+    .LeeAddCustomConfig(@"day", ^(MLEmojiLabel *item) {
+        
+        item.textColor = [UIColor blackColor];
+        
+        item.text = item.text; // 重新赋值text
+    })
+    .LeeAddCustomConfig(@"night", ^(MLEmojiLabel *item) {
+        
+        item.textColor = [UIColor lightGrayColor];
+        
+        item.text = item.text;
+    });
+    
+    //正常应该设置image的标识符 完成切换不同图片的效果 , 但是这个demo没有夜间图片 暂时用这个方式演示一下咯 , 要不然会看着不太和谐
+    
+    self.containerBackgroundImageView.lee_theme
+    .LeeAddCustomConfig(@"day" , ^(UIImageView * item){
+        
+        item.alpha = 1.0f;
+        
+    }).LeeAddCustomConfig(@"night" , ^(UIImageView * item){
+        
+        item.alpha = 0.2f;
+    });
+    
+}
+
+- (void)setModel:(SDChatModel *)model{
+    
     _model = model;
     
     _label.text = model.text;

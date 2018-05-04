@@ -33,6 +33,8 @@
 #import "UITableView+SDAutoTableViewCellHeight.h"
 #import "UIView+SDAutoLayout.h"
 
+#import "LEETheme.h"
+
 #define kTimeLineTableViewCellId @"SDTimeLineCell"
 
 static CGFloat textFieldH = 40;
@@ -57,6 +59,28 @@ static CGFloat textFieldH = 40;
 {
     [super viewDidLoad];
     
+    //LEETheme 分为两种模式 , 默认设置模式 标识符设置模式 , 朋友圈demo展示的是默认设置模式的使用 , 微信聊天demo和Demo10 展示的是标识符模式的使用
+    
+    UIBarButtonItem *rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"日间" style:UIBarButtonItemStyleDone target:self action:@selector(rightBarButtonItemAction:)];
+    
+    rightBarButtonItem.lee_theme
+    .LeeAddCustomConfig(DAY , ^(UIBarButtonItem *item){
+        
+        item.title = @"夜间";
+        
+    }).LeeAddCustomConfig(NIGHT , ^(UIBarButtonItem *item){
+        
+        item.title = @"日间";
+    });
+    
+    //为self.view 添加背景颜色设置
+    
+    self.view.lee_theme
+    .LeeAddBackgroundColor(DAY , [UIColor whiteColor])
+    .LeeAddBackgroundColor(NIGHT , [UIColor blackColor]);
+    
+    self.navigationItem.rightBarButtonItem = rightBarButtonItem;
+    
     self.automaticallyAdjustsScrollViewInsets = NO;
     
     self.edgesForExtendedLayout = UIRectEdgeTop;
@@ -72,7 +96,15 @@ static CGFloat textFieldH = 40;
     [_refreshFooter addToScrollView:self.tableView refreshOpration:^{
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
             [weakSelf.dataArray addObjectsFromArray:[weakSelf creatModelsWithCount:10]];
-            [weakSelf.tableView reloadData];
+            
+            /**
+            [weakSelf.tableView reloadDataWithExistedHeightCache]
+            作用等同于
+            [weakSelf.tableView reloadData]
+            只是“reloadDataWithExistedHeightCache”刷新tableView但不清空之前已经计算好的高度缓存，用于直接将新数据拼接在旧数据之后的tableView刷新
+             */
+            [weakSelf.tableView reloadDataWithExistedHeightCache];
+            
             [weakRefreshFooter endRefreshing];
         });
     }];
@@ -81,11 +113,22 @@ static CGFloat textFieldH = 40;
     headerView.frame = CGRectMake(0, 0, 0, 260);
     self.tableView.tableHeaderView = headerView;
     
+    //添加分隔线颜色设置
+    
+    self.tableView.lee_theme
+    .LeeAddSeparatorColor(DAY , [[UIColor lightGrayColor] colorWithAlphaComponent:0.5f])
+    .LeeAddSeparatorColor(NIGHT , [[UIColor grayColor] colorWithAlphaComponent:0.5f]);
+    
     [self.tableView registerClass:[SDTimeLineCell class] forCellReuseIdentifier:kTimeLineTableViewCellId];
     
     [self setupTextField];
     
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardNotification:) name:UIKeyboardWillChangeFrameNotification object:nil];
+    
+    // 解决在iOS11上朋友圈demo文字收折或者展开时出现cell跳动问题
+    self.tableView.estimatedRowHeight = 0;
+    self.tableView.estimatedSectionFooterHeight = 0;
+    self.tableView.estimatedSectionHeaderHeight = 0;
 }
 
 - (void)viewDidAppear:(BOOL)animated
@@ -108,6 +151,8 @@ static CGFloat textFieldH = 40;
             });
         }];
         [self.tableView.superview addSubview:_refreshHeader];
+    } else {
+        [self.tableView.superview bringSubviewToFront:_refreshHeader];
     }
 }
 
@@ -132,12 +177,48 @@ static CGFloat textFieldH = 40;
     _textField.delegate = self;
     _textField.layer.borderColor = [[UIColor lightGrayColor] colorWithAlphaComponent:0.8].CGColor;
     _textField.layer.borderWidth = 1;
-    _textField.backgroundColor = [UIColor whiteColor];
+    
+    //为textfield添加背景颜色 字体颜色的设置 还有block设置 , 在block中改变它的键盘样式 (当然背景颜色和字体颜色也可以直接在block中写)
+    
+    _textField.lee_theme
+    .LeeAddBackgroundColor(DAY , [UIColor whiteColor])
+    .LeeAddBackgroundColor(NIGHT , [UIColor blackColor])
+    .LeeAddTextColor(DAY , [UIColor blackColor])
+    .LeeAddTextColor(NIGHT , [UIColor grayColor])
+    .LeeAddCustomConfig(DAY , ^(UITextField *item){
+        
+        item.keyboardAppearance = UIKeyboardAppearanceDefault;
+        if ([item isFirstResponder]) {
+            [item resignFirstResponder];
+            [item becomeFirstResponder];
+        }
+    }).LeeAddCustomConfig(NIGHT , ^(UITextField *item){
+    
+        item.keyboardAppearance = UIKeyboardAppearanceDark;
+        if ([item isFirstResponder]) {
+            [item resignFirstResponder];
+            [item becomeFirstResponder];
+        }
+    });
+    
     _textField.frame = CGRectMake(0, [UIScreen mainScreen].bounds.size.height, self.view.width_sd, textFieldH);
     [[UIApplication sharedApplication].keyWindow addSubview:_textField];
     
     [_textField becomeFirstResponder];
     [_textField resignFirstResponder];
+}
+
+// 右栏目按钮点击事件
+
+- (void)rightBarButtonItemAction:(UIBarButtonItem *)sender{
+    
+    if ([[LEETheme currentThemeTag] isEqualToString:DAY]) {
+        
+        [LEETheme startTheme:NIGHT];
+   
+    } else {
+        [LEETheme startTheme:DAY];
+    }
 }
 
 - (NSArray *)creatModelsWithCount:(NSInteger)count
@@ -296,12 +377,11 @@ static CGFloat textFieldH = 40;
 
 
 
-
 - (CGFloat)cellContentViewWith
 {
     CGFloat width = [UIScreen mainScreen].bounds.size.width;
     
-    // 适配ios7
+    // 适配ios7横屏
     if ([UIApplication sharedApplication].statusBarOrientation != UIInterfaceOrientationPortrait && [[UIDevice currentDevice].systemVersion floatValue] < 8) {
         width = [UIScreen mainScreen].bounds.size.height;
     }
@@ -345,7 +425,9 @@ static CGFloat textFieldH = 40;
     }
     model.likeItemsArray = [temp copy];
     
-    [self.tableView reloadRowsAtIndexPaths:@[index] withRowAnimation:UITableViewRowAnimationNone];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.25 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [self.tableView reloadRowsAtIndexPaths:@[index] withRowAnimation:UITableViewRowAnimationNone];
+    });
 }
 
 

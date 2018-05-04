@@ -32,8 +32,6 @@
 {
     [super viewDidLoad];
     
-    
- 
     // demo1.内容自适应view
     [self setupAutoHeightView];
     
@@ -42,6 +40,9 @@
     
     // demo3.高度自适应label
     [self setupAutoHeightLabel];
+    
+    // demo4.设置button根据文字size自适应
+    [self setupAutoSizeButton];
     
 }
 
@@ -128,5 +129,70 @@
     
 }
 
+// demo4.设置button根据文字size自适应
+- (void)setupAutoSizeButton
+{
+    UIButton *btn = [UIButton new];
+    btn.backgroundColor = [UIColor redColor];
+    [btn setTitle:@"button根据文字自适应" forState:UIControlStateNormal];
+    [self.view addSubview:btn];
+    
+    btn.sd_layout
+    .centerXEqualToView(self.view)
+    .topSpaceToView(self.view1, 20);
+    
+    // 设置button根据文字size自适应
+    [btn setupAutoSizeWithHorizontalPadding:10 buttonHeight:25];
+}
+
 
 @end
+
+
+
+
+
+/*
+ 
+ 
+ self.view0.sd_layout
+ .leftSpaceToView(self.view, 10)
+ .widthIs(150)
+ .topSpaceToView(self.view, 100)
+ .heightIs(30);
+ 
+ self.view1.sd_layout
+ .leftEqualToView(self.view0)
+ .widthRatioToView(self.view, 0.3)
+ .heightIs(50)
+ .topSpaceToView(self.view0, 20);
+ 
+ self.view2.sd_layout
+ .leftSpaceToView(@[self.view0, self.view1], 30)
+ .widthIs(100)
+ .heightEqualToWidth()
+ .topEqualToView(self.view0);
+ 
+ 
+ self.view4.sd_layout
+ .leftSpaceToView(self.view, 50)
+ .topSpaceToView(self.view, 100)
+ .heightRatioToView(self.view, 0.3)
+ .widthIs(50);
+ 
+ self.view3.sd_layout
+ .leftSpaceToView(self.view4, 20)
+ .topEqualToView(self.view4)
+ .widthIs(100)
+ .heightIs(150);
+ 
+ self.view5.sd_layout
+ .leftEqualToView(self.view4)
+ .topSpaceToView(@[self.view3, self.view4], 30)
+ .widthIs(200)
+ .heightIs(20);
+ 
+
+ 
+ 
+ */
